@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ovarian Cancer Platinum Resistance Prediction Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Text:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f2f5;
+    --white: #ffffff;
+    --navy: #1a2744;
+    --accent: #3C5488;
+    --accent-hover: #2d4070;
+    --border: #d8dde6;
+    --text: #1a2744;
+    --text-muted: #6b7a90;
+    --green: #00A087;
+    --red: #E64B35;
+    --blue: #4DBBD5;
+    --shadow: 0 2px 12px rgba(26,39,68,0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .site-header {
+    background: var(--white); border-bottom: 3px solid var(--accent);
+    padding: 32px 24px; text-align: center; box-shadow: var(--shadow);
+  }
+  .institution { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 10px; }
+  .site-title { font-family: 'Crimson Text', serif; font-size: 32px; font-weight: 700; color: var(--navy); }
+  .site-subtitle { font-size: 14px; color: var(--text-muted); margin-top: 8px; }
+
+  .main { max-width: 1140px; margin: 32px auto; padding: 0 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .panel { background: var(--white); border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow); padding: 28px; }
+  .panel-title { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 24px; padding-left: 14px; border-left: 4px solid var(--accent); }
+
+  .form-group { margin-bottom: 18px; }
+  .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+  .form-label .unit { font-weight: 400; color: var(--text-muted); }
+  .form-input {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; color: var(--text); background: #fafbfc; outline: none; transition: all 0.2s;
+  }
+  .form-input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(60,84,136,0.1); }
+
+  .predict-btn {
+    width: 100%; padding: 14px; background: var(--accent); border: none; border-radius: 8px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; font-weight: 700; color: white;
+    cursor: pointer; letter-spacing: 1.5px; text-transform: uppercase; transition: all 0.2s; margin-top: 8px;
+  }
+  .predict-btn:hover { background: var(--accent-hover); box-shadow: 0 4px 16px rgba(60,84,136,0.3); }
+
+  .reset-btn {
+    width: 100%; padding: 10px; background: transparent; border: 1.5px solid var(--border); border-radius: 8px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; margin-top: 8px; transition: all 0.2s;
+  }
+  .reset-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .single-result { display: none; margin-top: 24px; padding-top: 24px; border-top: 2px solid var(--bg); animation: fadeIn 0.4s ease; }
+  .single-result.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .result-probability { text-align: center; margin-bottom: 20px; }
+  .result-probability .value { font-family: 'Crimson Text', serif; font-size: 52px; font-weight: 700; line-height: 1; }
+  .result-probability .label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  .risk-meter { margin-bottom: 16px; }
+  .meter-track { height: 10px; background: linear-gradient(90deg, var(--blue) 0%, var(--blue) 25.6%, var(--red) 25.6%, var(--red) 100%); border-radius: 5px; position: relative; }
+  .meter-pointer {
+    position: absolute; top: -6px; width: 22px; height: 22px; background: var(--white);
+    border: 3px solid var(--navy); border-radius: 50%; transform: translateX(-50%); transition: left 0.8s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .meter-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 10px; position: relative; }
+
+  .assessment-box { text-align: center; padding: 14px; border-radius: 8px; font-weight: 700; font-size: 14px; }
+  .assess-low { background: rgba(77,187,213,0.12); color: #2a8fa3; border: 1px solid rgba(77,187,213,0.3); }
+  .assess-high { background: rgba(230,75,53,0.12); color: #c0392b; border: 1px solid rgba(230,75,53,0.3); }
+
+  /* Batch upload area */
+  .upload-area { margin-bottom: 20px; }
+  .upload-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .upload-btn {
+    flex: 1; padding: 14px; background: var(--accent); border: none; border-radius: 8px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 600; color: white;
+    cursor: pointer; transition: all 0.2s; text-align: center;
+  }
+  .upload-btn:hover { background: var(--accent-hover); }
+  .template-btn {
+    padding: 14px 20px; background: transparent; border: 1.5px solid var(--border); border-radius: 8px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .template-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .upload-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  .upload-status { font-size: 13px; font-weight: 600; margin-bottom: 16px; display: none; padding: 10px; border-radius: 8px; text-align: center; }
+  .upload-status.success { display: block; background: rgba(0,160,135,0.1); color: var(--green); }
+  .upload-status.error { display: block; background: rgba(230,75,53,0.1); color: var(--red); }
+
+  /* Paste area */
+  .paste-section { margin-bottom: 16px; }
+  .paste-toggle {
+    font-size: 13px; color: var(--accent); cursor: pointer; font-weight: 500;
+    margin-bottom: 8px; display: inline-block;
+  }
+  .paste-toggle:hover { text-decoration: underline; }
+  .paste-area-wrap { display: none; }
+  .paste-area-wrap.open { display: block; }
+  .paste-area {
+    width: 100%; height: 120px; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-family: monospace; font-size: 12px; resize: vertical; outline: none; background: #fafbfc;
+  }
+  .paste-area:focus { border-color: var(--accent); }
+  .paste-hint { font-size: 11px; color: var(--text-muted); margin: 6px 0; }
+  .parse-btn {
+    padding: 8px 16px; background: var(--green); border: none; border-radius: 6px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 600; color: white; cursor: pointer;
+  }
+
+  .batch-summary {
+    display: none; padding: 12px; background: #f7f8fa; border-radius: 8px;
+    font-size: 13px; text-align: center; margin-bottom: 12px;
+  }
+  .batch-summary span { margin: 0 10px; font-weight: 600; }
+
+  .batch-table-wrap { max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+  .batch-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .batch-table thead { position: sticky; top: 0; z-index: 1; }
+  .batch-table th { background: var(--accent); color: white; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 12px; white-space: nowrap; }
+  .batch-table td { padding: 9px 12px; border-bottom: 1px solid #eef0f4; white-space: nowrap; }
+  .batch-table tbody tr:hover { background: #f7f8fa; }
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .tag-low { background: rgba(77,187,213,0.15); color: #2a8fa3; }
+  .tag-high { background: rgba(230,75,53,0.15); color: #c0392b; }
+
+  .export-btn {
+    width: 100%; padding: 12px; background: var(--green); border: none; border-radius: 8px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 600; color: white;
+    cursor: pointer; margin-top: 12px; display: none; transition: all 0.2s;
+  }
+  .export-btn:hover { background: #008a74; }
+
+  .formula-panel { grid-column: 1 / -1; }
+  .formula-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .formula-box {
+    background: var(--navy); border-radius: 10px; padding: 20px;
+    font-family: 'Courier New', monospace; font-size: 14px; line-height: 2; color: #a8c0e8;
+  }
+  .formula-box .highlight { color: #7cd4c0; font-weight: 700; }
+  .coef-table { width: 100%; border-collapse: collapse; }
+  .coef-table th { padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid var(--border); }
+  .coef-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #eef0f4; }
+  .coef-table .mono { font-family: 'Courier New', monospace; font-weight: 600; }
+  .coef-neg { color: var(--blue); }
+  .coef-pos { color: var(--red); }
+
+  .site-footer { max-width: 1140px; margin: 0 auto 40px; padding: 0 24px; }
+  .footer-content { background: var(--white); border-radius: 12px; border: 1px solid var(--border); padding: 20px 28px; display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow); }
+  .footer-icon { font-size: 28px; flex-shrink: 0; }
+  .footer-text { font-size: 12px; color: var(--text-muted); line-height: 1.7; }
+  .footer-text strong { color: var(--red); }
+
+  @media (max-width: 768px) {
+    .main { grid-template-columns: 1fr; }
+    .formula-grid { grid-template-columns: 1fr; }
+    .site-title { font-size: 24px; }
+    .upload-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="institution">Beijing Obstetrics and Gynecology Hospital, Capital Medical University</div>
+  <h1 class="site-title">Ovarian Cancer Platinum Resistance Prediction Tool</h1>
+  <p class="site-subtitle">4-Protein DDR Signature · Youden Cutoff 12.8% · Input raw MFI, auto-standardized</p>
+</header>
+
+<div class="main">
+
+  <!-- Left: Single Sample -->
+  <div class="panel">
+    <h2 class="panel-title">Single Sample Assessment</h2>
+    <div class="form-group">
+      <label class="form-label">Patient ID</label>
+      <input type="text" class="form-input" id="patientId" placeholder="e.g. Patient-001">
+    </div>
+    <div class="form-group">
+      <label class="form-label">CYREN <span class="unit">(MFI)</span></label>
+      <input type="number" step="any" class="form-input" id="s_cyren" placeholder="e.g. 0.035">
+    </div>
+    <div class="form-group">
+      <label class="form-label">PRKDC <span class="unit">(MFI)</span></label>
+      <input type="number" step="any" class="form-input" id="s_prkdc" placeholder="e.g. 0.088">
+    </div>
+    <div class="form-group">
+      <label class="form-label">MORF4L1 <span class="unit">(MFI)</span></label>
+      <input type="number" step="any" class="form-input" id="s_morf4l1" placeholder="e.g. 0.032">
+    </div>
+    <div class="form-group">
+      <label class="form-label">ZMYND8 <span class="unit">(MFI)</span></label>
+      <input type="number" step="any" class="form-input" id="s_zmynd8" placeholder="e.g. 0.061">
+    </div>
+    <button class="predict-btn" onclick="predictSingle()">PREDICT NOW</button>
+    <button class="reset-btn" onclick="resetSingle()">Clear All</button>
+
+    <div class="single-result" id="singleResult">
+      <div class="result-probability">
+        <div class="value" id="singleProb">—</div>
+        <div class="label">Predicted Probability of Platinum Resistance</div>
+      </div>
+      <div class="risk-meter">
+        <div class="meter-track">
+          <div class="meter-pointer" id="meterPointer" style="left: 0%"></div>
+        </div>
+        <div class="meter-labels">
+          <span>0%</span>
+          <span style="position:absolute;left:25.6%;transform:translateX(-50%)">12.8%<br>(cutoff)</span>
+          <span>50%</span>
+        </div>
+      </div>
+      <div class="assessment-box" id="assessBox">—</div>
+    </div>
+  </div>
+
+  <!-- Right: Batch Processing -->
+  <div class="panel">
+    <h2 class="panel-title">Batch Data Processing</h2>
+
+    <div class="upload-area">
+      <div class="upload-row">
+        <label class="upload-btn" for="fileInput">📂 Select Excel / CSV File</label>
+        <button class="template-btn" onclick="downloadTemplate()">⬇ Template</button>
+      </div>
+      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none">
+      <div class="upload-hint">Required columns: CYREN, PRKDC, MORF4L1, ZMYND8 (raw MFI values)</div>
+      <div class="upload-status" id="uploadStatus"></div>
+    </div>
+
+    <!-- Paste fallback -->
+    <div class="paste-section">
+      <span class="paste-toggle" onclick="togglePaste()">▸ Or paste data directly (CSV format)</span>
+      <div class="paste-area-wrap" id="pasteWrap">
+        <textarea class="paste-area" id="pasteArea" placeholder="PatientID,CYREN,PRKDC,MORF4L1,ZMYND8&#10;Patient_001,0.035,0.139,0.028,0.122&#10;Patient_002,0.006,0.223,0.033,0.247"></textarea>
+        <div class="paste-hint">One header row + one row per patient. Comma-separated.</div>
+        <button class="parse-btn" onclick="parsePaste()">Process Pasted Data</button>
+      </div>
+    </div>
+
+    <div class="batch-summary" id="batchSummary">
+      <span id="sumTotal">—</span> patients |
+      <span id="sumLow" style="color:var(--blue)">— Low Risk</span> |
+      <span id="sumHigh" style="color:var(--red)">— Elevated Risk</span>
+    </div>
+
+    <div class="batch-table-wrap">
+      <table class="batch-table">
+        <thead>
+          <tr><th>Patient ID</th><th>Prob.</th><th>Assessment</th><th>CYREN</th><th>PRKDC</th><th>MORF4L1</th><th>ZMYND8</th></tr>
+        </thead>
+        <tbody id="batchBody"></tbody>
+      </table>
+    </div>
+    <button class="export-btn" id="exportBtn" onclick="exportCSV()">⬇ Export Results as CSV</button>
+  </div>
+
+  <!-- Formula Panel -->
+  <div class="panel formula-panel">
+    <h2 class="panel-title">Model Specification</h2>
+    <div class="formula-grid">
+      <div class="formula-box">
+        <span class="highlight">P</span> = 1 / (1 + e<sup style="color:#fff">−Z</sup>)<br><br>
+        <span class="highlight">Z</span> = −2.6902<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;+ (−0.5771) × zscore(CYREN)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;+ (−0.4147) × zscore(PRKDC)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;+ (+0.4936) × zscore(MORF4L1)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;+ (−1.3172) × zscore(ZMYND8)<br><br>
+        <span style="color:#888;font-size:12px">zscore = (MFI − mean) / sd<br>Cutoff: P ≥ 12.8% → Elevated Risk</span>
+      </div>
+      <div>
+        <table class="coef-table">
+          <thead><tr><th>Variable</th><th>β</th><th>Std.Err</th><th>P value</th><th>Effect</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Intercept</strong></td><td class="mono coef-neg">−2.6902</td><td>0.4272</td><td>&lt;0.001</td><td>—</td></tr>
+            <tr><td><strong>CYREN</strong></td><td class="mono coef-neg">−0.5771</td><td>0.4908</td><td>0.240</td><td class="coef-neg">↓ Protective</td></tr>
+            <tr><td><strong>PRKDC</strong></td><td class="mono coef-neg">−0.4147</td><td>0.3617</td><td>0.252</td><td class="coef-neg">↓ Protective</td></tr>
+            <tr><td><strong>MORF4L1</strong></td><td class="mono coef-pos">+0.4936</td><td>0.2962</td><td>0.096</td><td class="coef-pos">↑ Risk</td></tr>
+            <tr><td><strong>ZMYND8</strong></td><td class="mono coef-neg">−1.3172</td><td>0.6505</td><td>0.043*</td><td class="coef-neg">↓ Protective</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:12px">
+          * P &lt; 0.05 &nbsp;|&nbsp; Youden cutoff = 12.8% (Sensitivity 76.5%, Specificity 68.3%)<br>
+          Model AUC = 0.753 &nbsp;|&nbsp; NPV at cutoff = 96.0% &nbsp;|&nbsp; Validated in 159 patients
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="site-footer">
+  <div class="footer-content">
+    <div class="footer-icon">⚠️</div>
+    <div class="footer-text">
+      <strong>For Research Use Only — Not for Clinical Diagnosis.</strong><br>
+      Predictions are based on a logistic regression model using raw MFI from multiplex immunofluorescence (auto Z-score standardized internally). Clinical decisions should not be based solely on this tool.
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// =============================================
+// Model
+// =============================================
+const COEF = { intercept: -2.6902492, CYREN: -0.5771484, PRKDC: -0.4146686, MORF4L1: 0.4936480, ZMYND8: -1.3171988 };
+const NORM = {
+  CYREN:   { mean: 0.045698,   sd: 0.03949188 },
+  PRKDC:   { mean: 0.08785485, sd: 0.07623326 },
+  MORF4L1: { mean: 0.03187974, sd: 0.01194398 },
+  ZMYND8:  { mean: 0.06098923, sd: 0.07281242 }
+};
+const CUTOFF = 0.128;
+
+function zscore(val, protein) { return (val - NORM[protein].mean) / NORM[protein].sd; }
+
+function calcProb(cyren, prkdc, morf4l1, zmynd8) {
+  const z = COEF.intercept
+    + COEF.CYREN   * zscore(cyren,   'CYREN')
+    + COEF.PRKDC   * zscore(prkdc,   'PRKDC')
+    + COEF.MORF4L1 * zscore(morf4l1, 'MORF4L1')
+    + COEF.ZMYND8  * zscore(zmynd8,  'ZMYND8');
+  return 1 / (1 + Math.exp(-z));
+}
+
+function getRisk(prob) {
+  if (prob < CUTOFF) return { text: 'Low Risk — Likely Platinum Sensitive (NPV 96%)', cls: 'assess-low', tag: 'tag-low', short: 'Low' };
+  return { text: 'Elevated Risk — Platinum Resistance Possible', cls: 'assess-high', tag: 'tag-high', short: 'Elevated' };
+}
+
+// =============================================
+// Single prediction
+// =============================================
+function predictSingle() {
+  const vals = ['s_cyren','s_prkdc','s_morf4l1','s_zmynd8'].map(id => parseFloat(document.getElementById(id).value));
+  if (vals.some(isNaN)) { alert('Please enter all 4 protein MFI values.'); return; }
+
+  const prob = calcProb(...vals);
+  const pct = (prob * 100).toFixed(1);
+  const risk = getRisk(prob);
+
+  document.getElementById('singleResult').classList.add('active');
+  const probEl = document.getElementById('singleProb');
+  probEl.textContent = pct + '%';
+  probEl.style.color = prob < CUTOFF ? 'var(--blue)' : 'var(--red)';
+
+  // Meter: scale to 0-50% range for display
+  const displayPct = Math.min(prob * 100 / 50 * 100, 100);
+  document.getElementById('meterPointer').style.left = displayPct + '%';
+
+  const box = document.getElementById('assessBox');
+  box.textContent = risk.text;
+  box.className = 'assessment-box ' + risk.cls;
+}
+
+function resetSingle() {
+  ['s_cyren','s_prkdc','s_morf4l1','s_zmynd8','patientId'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('singleResult').classList.remove('active');
+}
+
+// =============================================
+// File upload (standard button approach)
+// =============================================
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('uploadStatus');
+  status.className = 'upload-status'; status.style.display = 'none';
+
+  const reader = new FileReader();
+  reader.onerror = function() {
+    status.textContent = '❌ Failed to read file.';
+    status.className = 'upload-status error';
+  };
+  reader.onload = function(ev) {
+    try {
+      let data;
+      if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+        data = parseCSVText(ev.target.result);
+      } else {
+        const wb = XLSX.read(ev.target.result, { type: 'array' });
+        data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+      }
+      if (data.length === 0) throw new Error('No data rows found.');
+      processBatch(data);
+      status.textContent = '✓ ' + file.name + ' — ' + data.length + ' rows loaded';
+      status.className = 'upload-status success';
+    } catch (err) {
+      status.textContent = '❌ Error: ' + err.message;
+      status.className = 'upload-status error';
+    }
+  };
+  if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+    reader.readAsText(file);
+  } else {
+    reader.readAsArrayBuffer(file);
+  }
+});
+
+// =============================================
+// Paste fallback
+// =============================================
+function togglePaste() {
+  const wrap = document.getElementById('pasteWrap');
+  wrap.classList.toggle('open');
+  const toggle = wrap.previousElementSibling;
+  toggle.textContent = wrap.classList.contains('open') ? '▾ Or paste data directly (CSV format)' : '▸ Or paste data directly (CSV format)';
+}
+
+function parsePaste() {
+  const text = document.getElementById('pasteArea').value.trim();
+  if (!text) { alert('Please paste data first.'); return; }
+  try {
+    const data = parseCSVText(text);
+    if (data.length === 0) throw new Error('No valid data rows.');
+    processBatch(data);
+    const status = document.getElementById('uploadStatus');
+    status.textContent = '✓ Pasted data — ' + data.length + ' rows processed';
+    status.className = 'upload-status success';
+  } catch (err) {
+    alert('Parse error: ' + err.message);
+  }
+}
+
+function parseCSVText(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  // Try comma, tab, semicolon as delimiter
+  let delim = ',';
+  if (lines[0].includes('\t')) delim = '\t';
+  else if (lines[0].includes(';')) delim = ';';
+
+  const headers = lines[0].split(delim).map(h => h.trim().replace(/^["']|["']$/g, ''));
+  return lines.slice(1).filter(l => l.trim()).map(line => {
+    const vals = line.split(delim).map(v => v.trim().replace(/^["']|["']$/g, ''));
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = vals[i] || '');
+    return obj;
+  });
+}
+
+// =============================================
+// Batch processing
+// =============================================
+let batchResults = [];
+
+function processBatch(data) {
+  batchResults = [];
+  const tbody = document.getElementById('batchBody');
+  tbody.innerHTML = '';
+  let counts = { low: 0, high: 0 };
+
+  data.forEach((row, i) => {
+    const id = row['PatientID'] || row['Patient_ID'] || row['ID'] || row['samples'] || row['Sample'] || Object.values(row)[0] || (i + 1);
+    const cyren   = parseFloat(row['CYREN']   || row['cyren']   || row['Cyren']);
+    const prkdc   = parseFloat(row['PRKDC']   || row['prkdc']   || row['Prkdc']);
+    const morf4l1 = parseFloat(row['MORF4L1'] || row['morf4l1'] || row['Morf4l1']);
+    const zmynd8  = parseFloat(row['ZMYND8']  || row['zmynd8']  || row['Zmynd8']);
+
+    if ([cyren, prkdc, morf4l1, zmynd8].some(isNaN)) return;
+
+    const prob = calcProb(cyren, prkdc, morf4l1, zmynd8);
+    const risk = getRisk(prob);
+    if (prob < CUTOFF) counts.low++; else counts.high++;
+
+    batchResults.push({ id, prob, risk: risk.short, cyren, prkdc, morf4l1, zmynd8 });
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td><strong>' + id + '</strong></td>'
+      + '<td>' + (prob*100).toFixed(1) + '%</td>'
+      + '<td><span class="tag ' + risk.tag + '">' + risk.short + '</span></td>'
+      + '<td>' + cyren.toFixed(4) + '</td>'
+      + '<td>' + prkdc.toFixed(4) + '</td>'
+      + '<td>' + morf4l1.toFixed(4) + '</td>'
+      + '<td>' + zmynd8.toFixed(4) + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('sumTotal').textContent = batchResults.length;
+  document.getElementById('sumLow').textContent = counts.low + ' Low Risk';
+  document.getElementById('sumHigh').textContent = counts.high + ' Elevated Risk';
+  document.getElementById('batchSummary').style.display = 'block';
+  document.getElementById('exportBtn').style.display = 'block';
+}
+
+function exportCSV() {
+  if (!batchResults.length) return;
+  let csv = 'PatientID,CYREN,PRKDC,MORF4L1,ZMYND8,Probability,Risk_Level\n';
+  batchResults.forEach(r => {
+    csv += r.id+','+r.cyren+','+r.prkdc+','+r.morf4l1+','+r.zmynd8+','+r.prob.toFixed(4)+','+r.risk+'\n';
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = 'PlatinumResistance_Predictions.csv';
+  a.click();
+}
+
+function downloadTemplate() {
+  const csv = 'PatientID,CYREN,PRKDC,MORF4L1,ZMYND8\nPatient_001,0.035,0.139,0.028,0.122\nPatient_002,0.006,0.223,0.033,0.247\n';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = 'Prediction_Template.csv';
+  a.click();
+}
+</script>
+</body>
+</html>
