@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ovarian Cancer Platinum Resistance Prediction Tool</title>
+<title>Ovarian Cancer Platinum Resistance Research Calculator</title>
 <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -67,7 +67,7 @@
   .result-probability .label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
 
   .risk-meter { margin-bottom: 16px; }
-  .meter-track { height: 10px; background: linear-gradient(90deg, var(--blue) 0%, var(--blue) 25.6%, var(--red) 25.6%, var(--red) 100%); border-radius: 5px; position: relative; }
+  .meter-track { height: 10px; background: linear-gradient(90deg, var(--blue) 0%, var(--blue) 30.6%, var(--red) 30.6%, var(--red) 100%); border-radius: 5px; position: relative; }
   .meter-pointer {
     position: absolute; top: -6px; width: 22px; height: 22px; background: var(--white);
     border: 3px solid var(--navy); border-radius: 50%; transform: translateX(-50%); transition: left 0.8s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
@@ -155,6 +155,10 @@
   .coef-neg { color: var(--blue); }
   .coef-pos { color: var(--red); }
 
+  .ruo-banner { max-width: 1092px; margin: 24px auto 0; padding: 14px 20px; background: rgba(230,75,53,0.08); border: 1.5px solid rgba(230,75,53,0.35); border-radius: 10px; font-size: 13px; line-height: 1.6; color: var(--navy); }
+  .ruo-banner strong { color: #c0392b; }
+  @media (max-width: 768px) { .ruo-banner { margin: 16px 16px 0; } }
+
   .site-footer { max-width: 1140px; margin: 0 auto 40px; padding: 0 24px; }
   .footer-content { background: var(--white); border-radius: 12px; border: 1px solid var(--border); padding: 20px 28px; display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow); }
   .footer-icon { font-size: 28px; flex-shrink: 0; }
@@ -173,9 +177,11 @@
 
 <header class="site-header">
   <div class="institution">Beijing Obstetrics and Gynecology Hospital, Capital Medical University</div>
-  <h1 class="site-title">Ovarian Cancer Platinum Resistance Prediction Tool</h1>
-  <p class="site-subtitle">4-Protein DDR Signature · Youden Cutoff 12.8% · Input raw MFI, auto-standardized</p>
+  <h1 class="site-title">Ovarian Cancer Platinum Resistance Research Calculator</h1>
+  <p class="site-subtitle">Exploratory 4-Protein DDR Signature · Cutoff 15.3% · Input raw MFI, auto-standardized</p>
 </header>
+
+<div class="ruo-banner"><strong>For research use only — not for clinical decision-making.</strong> This model has not been externally validated. Standardization parameters come from a single-centre cohort (n = 148) and are specific to its staining and imaging protocol; MFI values from other platforms are not comparable.</div>
 
 <div class="main">
 
@@ -216,7 +222,7 @@
         </div>
         <div class="meter-labels">
           <span>0%</span>
-          <span style="position:absolute;left:25.6%;transform:translateX(-50%)">12.8%<br>(cutoff)</span>
+          <span style="position:absolute;left:30.6%;transform:translateX(-50%)">15.3%<br>(cutoff)</span>
           <span>50%</span>
         </div>
       </div>
@@ -271,27 +277,28 @@
     <div class="formula-grid">
       <div class="formula-box">
         <span class="highlight">P</span> = 1 / (1 + e<sup style="color:#fff">−Z</sup>)<br><br>
-        <span class="highlight">Z</span> = −2.6902<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;+ (−0.5771) × zscore(CYREN)<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;+ (−0.4147) × zscore(PRKDC)<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;+ (+0.4936) × zscore(MORF4L1)<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;+ (−1.3172) × zscore(ZMYND8)<br><br>
-        <span style="color:#888;font-size:12px">zscore = (MFI − mean) / sd<br>Cutoff: P ≥ 12.8% → Elevated Risk</span>
+        <span class="highlight">Z</span> = −2.6617<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;+ (−0.4204) × zscore(CYREN)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;+ (−0.5079) × zscore(PRKDC)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;+ (+0.4929) × zscore(MORF4L1)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;+ (−1.4234) × zscore(ZMYND8)<br><br>
+        <span style="color:#888;font-size:12px">zscore = (MFI − mean) / sd<br>Cutoff: P ≥ 15.3% → Elevated predicted risk</span>
       </div>
       <div>
         <table class="coef-table">
           <thead><tr><th>Variable</th><th>β</th><th>Std.Err</th><th>P value</th><th>Effect</th></tr></thead>
           <tbody>
-            <tr><td><strong>Intercept</strong></td><td class="mono coef-neg">−2.6902</td><td>0.4272</td><td>&lt;0.001</td><td>—</td></tr>
-            <tr><td><strong>CYREN</strong></td><td class="mono coef-neg">−0.5771</td><td>0.4908</td><td>0.240</td><td class="coef-neg">↓ Protective</td></tr>
-            <tr><td><strong>PRKDC</strong></td><td class="mono coef-neg">−0.4147</td><td>0.3617</td><td>0.252</td><td class="coef-neg">↓ Protective</td></tr>
-            <tr><td><strong>MORF4L1</strong></td><td class="mono coef-pos">+0.4936</td><td>0.2962</td><td>0.096</td><td class="coef-pos">↑ Risk</td></tr>
-            <tr><td><strong>ZMYND8</strong></td><td class="mono coef-neg">−1.3172</td><td>0.6505</td><td>0.043*</td><td class="coef-neg">↓ Protective</td></tr>
+            <tr><td><strong>Intercept</strong></td><td class="mono coef-neg">−2.6617</td><td>0.4398</td><td>&lt;0.001</td><td>—</td></tr>
+            <tr><td><strong>CYREN</strong></td><td class="mono coef-neg">−0.4204</td><td>0.4625</td><td>0.363</td><td class="coef-neg">↓ Lower risk</td></tr>
+            <tr><td><strong>PRKDC</strong></td><td class="mono coef-neg">−0.5079</td><td>0.3752</td><td>0.176</td><td class="coef-neg">↓ Lower risk</td></tr>
+            <tr><td><strong>MORF4L1</strong></td><td class="mono coef-pos">+0.4929</td><td>0.3019</td><td>0.103</td><td class="coef-pos">↑ Higher risk</td></tr>
+            <tr><td><strong>ZMYND8</strong></td><td class="mono coef-neg">−1.4234</td><td>0.6710</td><td>0.034*</td><td class="coef-neg">↓ Lower risk</td></tr>
           </tbody>
         </table>
         <p style="font-size:11px;color:var(--text-muted);margin-top:12px">
-          * P &lt; 0.05 &nbsp;|&nbsp; Youden cutoff = 12.8% (Sensitivity 76.5%, Specificity 68.3%)<br>
-          Model AUC = 0.753 &nbsp;|&nbsp; NPV at cutoff = 96.0% &nbsp;|&nbsp; Validated in 150 patients
+          * P &lt; 0.05 &nbsp;|&nbsp; Coefficients per 1 SD of MFI; development cohort n = 148 (17 platinum-resistant)<br>
+          Apparent (in-sample) performance: AUC 0.767; at the 15.3% cutoff, sensitivity 70.6%, specificity 74.0%, PPV 26.1%, NPV 95.1%<br>
+          Bootstrap optimism-corrected AUC 0.694; calibration slope 0.62, so predicted probabilities are overconfident. Not externally validated.
         </p>
       </div>
     </div>
@@ -302,8 +309,8 @@
   <div class="footer-content">
     <div class="footer-icon">⚠️</div>
     <div class="footer-text">
-      <strong>For Research Use Only — Not for Clinical Diagnosis.</strong><br>
-      Predictions are based on a logistic regression model using raw MFI from multiplex immunofluorescence (auto Z-score standardized internally). Clinical decisions should not be based solely on this tool.
+      <strong>For research use only — not for clinical decision-making.</strong><br>
+      Predictions come from an exploratory logistic regression model developed in a single-centre cohort, using raw MFI from multiplex immunofluorescence standardized with that cohort's parameters. The model has not been externally validated, its probabilities are not calibrated for other settings, and MFI values obtained with other antibodies, staining protocols or imaging platforms are not comparable. Do not use this tool to guide treatment.
     </div>
   </div>
 </div>
@@ -313,14 +320,14 @@
 // =============================================
 // Model
 // =============================================
-const COEF = { intercept: -2.6902492, CYREN: -0.5771484, PRKDC: -0.4146686, MORF4L1: 0.4936480, ZMYND8: -1.3171988 };
+const COEF = { intercept: -2.6616783, CYREN: -0.4203805, PRKDC: -0.5079131, MORF4L1: 0.4928538, ZMYND8: -1.4234179 };
 const NORM = {
-  CYREN:   { mean: 0.045698,   sd: 0.03949188 },
-  PRKDC:   { mean: 0.08785485, sd: 0.07623326 },
-  MORF4L1: { mean: 0.03187974, sd: 0.01194398 },
-  ZMYND8:  { mean: 0.06098923, sd: 0.07281242 }
+  CYREN:   { mean: 0.04459312, sd: 0.03942026 },
+  PRKDC:   { mean: 0.09060285, sd: 0.07667370 },
+  MORF4L1: { mean: 0.03198398, sd: 0.01187799 },
+  ZMYND8:  { mean: 0.06233148, sd: 0.07070640 }
 };
-const CUTOFF = 0.128;
+const CUTOFF = 0.1532;   // Youden cutoff in the development cohort (n = 148)
 
 function zscore(val, protein) { return (val - NORM[protein].mean) / NORM[protein].sd; }
 
@@ -334,8 +341,8 @@ function calcProb(cyren, prkdc, morf4l1, zmynd8) {
 }
 
 function getRisk(prob) {
-  if (prob < CUTOFF) return { text: 'Low Risk — Likely Platinum Sensitive (NPV 96%)', cls: 'assess-low', tag: 'tag-low', short: 'Low' };
-  return { text: 'Elevated Risk — Platinum Resistance Possible', cls: 'assess-high', tag: 'tag-high', short: 'Elevated' };
+  if (prob < CUTOFF) return { text: 'Below cutoff — lower predicted risk (research use only)', cls: 'assess-low', tag: 'tag-low', short: 'Low' };
+  return { text: 'At or above cutoff — elevated predicted risk (research use only)', cls: 'assess-high', tag: 'tag-high', short: 'Elevated' };
 }
 
 // =============================================
